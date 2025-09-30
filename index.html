@@ -822,6 +822,34 @@
                 font-size: 0.7rem;
             }
         }
+
+        .btn-small {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            color: #ffffff;
+            background-color: #2563eb; /* azul */
+            border: 1px solid #1e4ed8;
+            vertical-align: middle;
+        }
+
+        .btn-small:hover {
+            background-color: #1e40af;
+            border-color: #1e3a8a;
+        }
+
+        .assignment-actions{
+            margin-left: 350px;
+        }
+
+        .assignment-actions-only{
+            margin-left: 400px;
+        }
+
     </style>
 </head>
 <body>
@@ -874,8 +902,14 @@
                         </li>
                         <li class="assignment-item">
                             <div class="assignment-status completed"></div>
-                            <a href="#" class="assignment-link">Mapeo Mundial en R</a>
+                            <span class="assignment-title">Procesamiento de datos ENA</span>
+                            
                         </li>
+
+                        <span class="assignment-actions">
+                                <a href="./1. Tarea/Agua.R" target="_blank" class="btn-small">Ver</a>
+                                <a href="./1. Tarea/Agua.html" download class="btn-small">PDF</a>
+                        </span>
                     </ul>
                 </div>
 
@@ -907,6 +941,10 @@
                             <div class="assignment-status completed"></div>
                             <a href="#" class="assignment-link">Análisis de Resultados</a>
                         </li>
+
+                        <span class="assignment-actions-only">
+                                <a href="./2. Tarea/Boostrap---Cars.html" download class="btn-small">PDF</a>
+                        </span>
                     </ul>
                 </div>
 
@@ -938,6 +976,10 @@
                             <div class="assignment-status completed"></div>
                             <a href="#" class="assignment-link">Reporte Final PDF</a>
                         </li>
+
+                        <span class="assignment-actions-only">
+                                <a href="./3. Tarea/Reporte_Simulacion_beckham_vieri.pdf" download class="btn-small">PDF</a>
+                        </span>
                     </ul>
                 </div>
 
