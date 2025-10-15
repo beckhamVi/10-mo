@@ -4,8 +4,8 @@ library(sf)
 library(leaflet)
 
 # 1. Leer datos
-caratula <- read_sav("E:\\10\\Estadistica espacial\\GitHub\\CARATULA.sav")
-cap100a_04 <- read_sav("E:\\10\\Estadistica espacial\\GitHub\\01_CAP100A_04.sav")
+caratula <- read_sav("E:\\10\\Estadistica_espacial\\CARATULA.sav")
+cap100a_04 <- read_sav("E:\\10\\Estadistica_espacial\\01_CAP100A_04.sav")
 
 
 # 2. Filtrar solo Puno
@@ -93,3 +93,76 @@ mapa_riego <- leaflet(puno_riego) %>%
 # 8. Mostrar mapas (se muestran por separado en RStudio/Quarto)
 mapa_agua
 mapa_riego
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 2. Filtrar Puno
+caratula_puno <- caratula %>% filter(NOMBREDD == "PUNO")
+cap100a_puno <- cap100a_04 %>% filter(NOMBREDD == "PUNO")
+
+# 3. Columnas y tipos
+cat("\n--- caratula_puno: columnas y tipos ---\n")
+str(caratula_puno)
+
+cat("\n--- cap100a_puno: columnas y tipos ---\n")
+str(cap100a_puno)
+
+# 4. Resumen estadístico
+cat("\n--- caratula_puno: resumen ---\n")
+summary(caratula_puno)
+
+cat("\n--- cap100a_puno: resumen ---\n")
+summary(cap100a_puno)
+
+# 5. Valores faltantes por columna
+cat("\n--- caratula_puno: NA por columna ---\n")
+sapply(caratula_puno, function(x) sum(is.na(x)))
+
+cat("\n--- cap100a_puno: NA por columna ---\n")
+sapply(cap100a_puno, function(x) sum(is.na(x)))
+
+# 6. Resumen de variables categóricas importantes
+cat("\n--- Fuente de agua (P120) ---\n")
+table(cap100a_puno$P120, useNA = "ifany")
+
+cat("\n--- Sistema de riego (P121) ---\n")
+table(cap100a_puno$P121, useNA = "ifany")
+
+
+#####################################################################################
+# Filtrar Puno
+caratula_puno <- caratula %>% filter(NOMBREDD == "PUNO")
+cap100a_puno <- cap100a_04 %>% filter(NOMBREDD == "PUNO")
+
+# Contar NAs por columna
+cat("--- caratula_puno: NA por columna ---\n")
+na_caratula <- sapply(caratula_puno, function(x) sum(is.na(x)))
+print(na_caratula)
+
+cat("\n--- cap100a_puno: NA por columna ---\n")
+na_cap100a <- sapply(cap100a_puno, function(x) sum(is.na(x)))
+print(na_cap100a)
+
+
+

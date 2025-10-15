@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moran vs Geary - Visualización Comparativa</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            overflow-x: hidden;
+        }
+        #header {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        #header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        #header p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 2400px;
+            margin: 0 auto;
+        }
+        .viz-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .viz-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .viz-subtitle {
+            font-size: 14px;
+            color: #7f8c8d;
+            text-align: center;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+        .canvas-container {
+            width: 100%;
+            height: 400px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 3px solid #3498db;
+            margin-bottom: 15px;
+        }
+        .explanation {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .explanation h3 {
+            color: #2c3e50;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .explanation p {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #34495e;
+            margin-bottom: 8px;
+        }
+        .formula {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 10px 0;
+            border-left: 4px solid #3498db;
+        }
+        .key-point {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .control-group {
+            margin: 10px 0;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        select, button {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .stats-box {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #3498db;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 13px;
+        }
+        .stat-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .stat-value {
+            color: #3498db;
+            font-weight: 700;
+        }
+        .interpretation {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .comparison-table th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+        @media (max-width: 1200px) {
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 11px;
+        }
+        .legend-color-box {
+            width: 20px;
+            height: 15px;
+            margin-right: 8px;
+            border-radius: 3px;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>🗺️ Moran I vs Geary C: Comparación Interactiva</h1>
+        <p>Visualización de las diferencias clave entre ambos índices de autocorrelación espacial</p>
+    </div>
+
+    <div class="comparison-container">
+        <!-- SECCIÓN MORAN -->
+        <div class="viz-section">
+            <div class="viz-title">📈 Índice de Moran I</div>
+            <div class="viz-subtitle">Mide CORRELACIÓN espacial entre vecinos</div>
+            
+            <div class="explanation">
+                <h3>¿Qué mide?</h3>
+                <p><strong>Similaridad global:</strong> ¿Los valores similares están agrupados?</p>
+                
+                <div class="formula">
+I = (n/W) × Σ w_ij × (x_i - x̄)(x_j - x̄) / Σ(x_i - x̄)²
+                </div>
+                
+                <p><strong>Enfoque:</strong> Productos cruzados de desviaciones</p>
+                <p><strong>Detecta:</strong> Si valores ALTOS están con ALTOS, y BAJOS con BAJOS</p>
+                
+                <div class="key-point">
+                    <strong>💡 Clave:</strong> Moran multiplica las desviaciones. Si ambos vecinos están por encima (o por debajo) de la media, el producto es POSITIVO → Agrupamiento
+                </div>
+            </div>
+
+            <div class="canvas-container" id="moranCanvas"></div>
+
+            <div class="stats-box">
+                <div class="stat-row">
+                    <span class="stat-label">Moran I:</span>
+                    <span class="stat-value" id="moranValue">0.0000</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Interpretación:</span>
+                    <span class="stat-value" id="moranInterpretation">-</span>
+                </div>
+                <div class="interpretation" id="moranExplain"></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN GEARY -->
+        <div class="viz-section">
+            <div class="viz-title">📊 Índice de Geary C</div>
+            <div class="viz-subtitle">Mide DIFERENCIAS entre vecinos directos</div>
+            
+            <div class="explanation">
+                <h3>¿Qué mide?</h3>
+                <p><strong>Disimilaridad local:</strong> ¿Qué tan diferentes son los vecinos directos?</p>
+                
+                <div class="formula">
+C = [(n-1)/2W] × Σ w_ij × (x_i - x_j)² / Σ(x_i - x̄)²
+                </div>
+                
+                <p><strong>Enfoque:</strong> Diferencias al cuadrado entre vecinos</p>
+                <p><strong>Detecta:</strong> Qué tan DISTINTOS son valores adyacentes</p>
+                
+                <div class="key-point">
+                    <strong>💡 Clave:</strong> Geary calcula (x_i - x_j)². Si vecinos son similares, la diferencia es PEQUEÑA → C bajo → Agrupamiento. Es más sensible a cambios locales abruptos.
+                </div>
+            </div>
+
+            <div class="canvas-container" id="gearyCanvas"></div>
+
+            <div class="stats-box">
+                <div class="stat-row">
+                    <span class="stat-label">Geary C:</span>
+                    <span class="stat-value" id="gearyValue">1.0000</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Interpretación:</span>
+                    <span class="stat-value" id="gearyInterpretation">-</span>
+                </div>
+                <div class="interpretation" id="gearyExplain"></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN HOTSPOTS -->
+        <div class="viz-section">
+            <div class="viz-title">🔥 Análisis LISA (Hotspots)</div>
+            <div class="viz-subtitle">Identifica clusters y outliers espaciales</div>
+            
+            <div class="explanation">
+                <h3>¿Qué mide?</h3>
+                <p><strong>Autocorrelación LOCAL:</strong> ¿Qué tipo de agrupamiento hay en cada ubicación?</p>
+                
+                <div class="formula">
+I_i = (x_i - x̄) × Σ w_ij(x_j - x̄)
+                </div>
+                
+                <p><strong>Enfoque:</strong> Descompone Moran global en contribuciones locales</p>
+                <p><strong>Detecta:</strong> Dónde específicamente están los clusters</p>
+                
+                <div class="key-point">
+                    <strong>💡 Clave:</strong> LISA clasifica cada ubicación según si es: <br>
+                    🔴 <strong>High-High</strong> (valor alto + vecinos altos) = HOTSPOT<br>
+                    🔵 <strong>Low-Low</strong> (valor bajo + vecinos bajos) = COLDSPOT<br>
+                    🟡 <strong>High-Low</strong> (valor alto + vecinos bajos) = OUTLIER<br>
+                    🟢 <strong>Low-High</strong> (valor bajo + vecinos altos) = OUTLIER
+                </div>
+            </div>
+
+            <div class="canvas-container" id="lisaCanvas"></div>
+
+            <div class="stats-box">
+                <div class="stat-row">
+                    <span class="stat-label">Hotspots (H-H):</span>
+                    <span class="stat-value" id="hotspotCount">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Coldspots (L-L):</span>
+                    <span class="stat-value" id="coldspotCount">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Outliers (H-L):</span>
+                    <span class="stat-value" id="outlierHLCount">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Outliers (L-H):</span>
+                    <span class="stat-value" id="outlierLHCount">0</span>
+                </div>
+                <div class="interpretation" id="lisaExplain"></div>
+            </div>
+
+            <div style="background: white; padding: 10px; border-radius: 8px; margin-top: 10px;">
+                <div style="font-weight: 600; margin-bottom: 8px; font-size: 12px;">Leyenda:</div>
+                <div class="legend-item">
+                    <div class="legend-color-box" style="background: #d73027;"></div>
+                    <span>High-High (Hotspot)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color-box" style="background: #4575b4;"></div>
+                    <span>Low-Low (Coldspot)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color-box" style="background: #fdae61;"></div>
+                    <span>High-Low (Outlier)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color-box" style="background: #abd9e9;"></div>
+                    <span>Low-High (Outlier)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color-box" style="background: #cccccc;"></div>
+                    <span>No significativo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTROLES -->
+        <div class="viz-section full-width">
+            <div class="viz-title">🎛️ Controles</div>
+            <div class="controls">
+                <div class="control-group">
+                    <label>Tipo de Patrón Espacial:</label>
+                    <select id="patternType">
+                        <option value="clustered">Agrupado (Clusters fuertes)</option>
+                        <option value="random">Aleatorio (Sin patrón)</option>
+                        <option value="dispersed">Disperso (Valores alternados)</option>
+                        <option value="gradient">Gradiente (Cambio suave)</option>
+                        <option value="sharp">Bordes abruptos (Cambio brusco)</option>
+                    </select>
+                </div>
+                <button onclick="regeneratePattern()">🔄 Regenerar Patrón</button>
+            </div>
+        </div>
+
+        <!-- TABLA COMPARATIVA -->
+        <div class="viz-section full-width">
+            <div class="viz-title">📋 Comparación Directa</div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Característica</th>
+                        <th>Moran I</th>
+                        <th>Geary C</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Fórmula base</strong></td>
+                        <td>Productos cruzados: (x_i - x̄)(x_j - x̄)</td>
+                        <td>Diferencias al cuadrado: (x_i - x_j)²</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rango típico</strong></td>
+                        <td>-1 a +1</td>
+                        <td>0 a 2+</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Agrupamiento positivo</strong></td>
+                        <td>I → +1 (valores similares juntos)</td>
+                        <td>C → 0 (diferencias pequeñas)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Aleatoriedad</strong></td>
+                        <td>I ≈ 0</td>
+                        <td>C ≈ 1</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dispersión</strong></td>
+                        <td>I → -1 (patrón tablero ajedrez)</td>
+                        <td>C → 2 (diferencias grandes)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sensibilidad</strong></td>
+                        <td>Patrones globales de agrupamiento</td>
+                        <td>Cambios locales y discontinuidades</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mejor para detectar</strong></td>
+                        <td>Clusters amplios y homogéneos</td>
+                        <td>Fronteras, bordes, cambios abruptos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Enfoque</strong></td>
+                        <td>¿Los vecinos son del mismo "tipo"?</td>
+                        <td>¿Qué tan diferentes son los vecinos?</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Uso con LISA</strong></td>
+                        <td>Base para calcular Moran Local (LISA)</td>
+                        <td>No se usa directamente en LISA</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="explanation" style="margin-top: 20px;">
+                <h3>📍 LISA (Local Indicators of Spatial Association)</h3>
+                <p><strong>Relación con Moran:</strong> LISA descompone el Moran global en contribuciones locales. Cada celda tiene su propio "Moran local" que indica su tipo de agrupamiento.</p>
+                
+                <div class="key-point">
+                    <strong>Clasificación LISA:</strong><br>
+                    • Si (valor_i > media) Y (vecinos > media) → <strong>High-High</strong> = HOTSPOT 🔥<br>
+                    • Si (valor_i < media) Y (vecinos < media) → <strong>Low-Low</strong> = COLDSPOT ❄️<br>
+                    • Si (valor_i > media) Y (vecinos < media) → <strong>High-Low</strong> = OUTLIER alto<br>
+                    • Si (valor_i < media) Y (vecinos > media) → <strong>Low-High</strong> = OUTLIER bajo
+                </div>
+                
+                <p><strong>Interpretación práctica:</strong></p>
+                <ul style="font-size: 13px; line-height: 1.8;">
+                    <li><strong>Hotspots:</strong> Áreas problemáticas (criminalidad), zonas de alto valor (precios inmobiliarios), focos de contagio (epidemiología)</li>
+                    <li><strong>Coldspots:</strong> Áreas de bajo riesgo, zonas de pobreza concentrada, áreas de baja actividad</li>
+                    <li><strong>Outliers:</strong> Casos atípicos que requieren atención especial (ej: mansión en barrio pobre, o viceversa)</li>
+                </ul>
+            </div>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let moranScene, moranCamera, moranRenderer;
+        let gearyScene, gearyCamera, gearyRenderer;
+        let lisaScene, lisaCamera, lisaRenderer;
+        let gridSize = 8;
+        let data = [];
+        let moranBars = [];
+        let gearyBars = [];
+        let lisaBars = [];
+
+        // Inicializar
+        function init() {
+            initMoranViz();
+            initGearyViz();
+            initLisaViz();
+            generatePattern();
+            animate();
+        }
+
+        // Inicializar visualización Moran
+        function initMoranViz() {
+            const container = document.getElementById('moranCanvas');
+            moranScene = new THREE.Scene();
+            moranScene.background = new THREE.Color(0x1a1a2e);
+            
+            moranCamera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            moranCamera.position.set(12, 12, 12);
+            moranCamera.lookAt(0, 0, 0);
+            
+            moranRenderer = new THREE.WebGLRenderer({ antialias: true });
+            moranRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(moranRenderer.domElement);
+            
+            addLights(moranScene);
+            addGrid(moranScene);
+        }
+
+        // Inicializar visualización Geary
+        function initGearyViz() {
+            const container = document.getElementById('gearyCanvas');
+            gearyScene = new THREE.Scene();
+            gearyScene.background = new THREE.Color(0x1a1a2e);
+            
+            gearyCamera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            gearyCamera.position.set(12, 12, 12);
+            gearyCamera.lookAt(0, 0, 0);
+            
+            gearyRenderer = new THREE.WebGLRenderer({ antialias: true });
+            gearyRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(gearyRenderer.domElement);
+            
+            addLights(gearyScene);
+            addGrid(gearyScene);
+        }
+
+        // Inicializar visualización LISA
+        function initLisaViz() {
+            const container = document.getElementById('lisaCanvas');
+            lisaScene = new THREE.Scene();
+            lisaScene.background = new THREE.Color(0x1a1a2e);
+            
+            lisaCamera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            lisaCamera.position.set(12, 12, 12);
+            lisaCamera.lookAt(0, 0, 0);
+            
+            lisaRenderer = new THREE.WebGLRenderer({ antialias: true });
+            lisaRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(lisaRenderer.domElement);
+            
+            addLights(lisaScene);
+            addGrid(lisaScene);
+        }
+
+        // Agregar luces
+        function addLights(scene) {
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            
+            const directional = new THREE.DirectionalLight(0xffffff, 0.8);
+            directional.position.set(10, 20, 10);
+            scene.add(directional);
+        }
+
+        // Agregar grid base
+        function addGrid(scene) {
+            const planeGeometry = new THREE.PlaneGeometry(gridSize * 1.2, gridSize * 1.2);
+            const planeMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x2c3e50, 
+                side: THREE.DoubleSide 
+            });
+            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.rotation.x = -Math.PI / 2;
+            plane.position.y = -0.1;
+            scene.add(plane);
+        }
+
+        // Generar patrón según tipo seleccionado
+        function generatePattern() {
+            const pattern = document.getElementById('patternType').value;
+            data = [];
+            
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    let value;
+                    
+                    switch(pattern) {
+                        case 'clustered':
+                            // Clusters fuertes
+                            if ((i < 3 && j < 3) || (i > 4 && j > 4)) {
+                                value = 80 + Math.random() * 15;
+                            } else if ((i < 3 && j > 4) || (i > 4 && j < 3)) {
+                                value = 20 + Math.random() * 15;
+                            } else {
+                                value = 50 + Math.random() * 15;
+                            }
+                            break;
+                        
+                        case 'random':
+                            value = Math.random() * 80 + 20;
+                            break;
+                        
+                        case 'dispersed':
+                            value = ((i + j) % 2 === 0) ? 80 : 20;
+                            break;
+                        
+                        case 'gradient':
+                            value = 20 + (i / gridSize) * 60;
+                            break;
+                        
+                        case 'sharp':
+                            value = (i < gridSize/2) ? 80 : 20;
+                            break;
+                    }
+                    
+                    data.push({ x: i, z: j, value: value });
+                }
+            }
+            
+            calculateIndices();
+            calculateLISA();
+            updateVisualization();
+        }
+
+        // Calcular índices
+        function calculateIndices() {
+            const n = data.length;
+            const mean = data.reduce((sum, d) => sum + d.value, 0) / n;
+            const variance = data.reduce((sum, d) => sum + Math.pow(d.value - mean, 2), 0) / n;
+            
+            let moranSum = 0;
+            let gearySum = 0;
+            let totalWeight = 0;
+            
+            data.forEach((cell, idx) => {
+                const neighbors = getNeighbors(cell.x, cell.z);
+                const w = neighbors.length;
+                
+                neighbors.forEach(n => {
+                    const nIdx = n.x * gridSize + n.z;
+                    const vi = cell.value;
+                    const vj = data[nIdx].value;
+                    
+                    // Moran: productos cruzados
+                    moranSum += (vi - mean) * (vj - mean);
+                    
+                    // Geary: diferencias al cuadrado
+                    gearySum += Math.pow(vi - vj, 2);
+                    
+                    totalWeight += 1;
+                });
+            });
+            
+            const moranI = (n / totalWeight) * moranSum / variance;
+            const gearyC = ((n - 1) / (2 * totalWeight)) * gearySum / variance;
+            
+            // Actualizar UI
+            document.getElementById('moranValue').textContent = moranI.toFixed(4);
+            document.getElementById('gearyValue').textContent = gearyC.toFixed(4);
+            
+            // Interpretaciones
+            let moranInterp, moranExplain;
+            if (moranI > 0.5) {
+                moranInterp = 'Agrupamiento FUERTE';
+                moranExplain = '✅ Valores similares están juntos. Productos cruzados POSITIVOS dominan (altos con altos, bajos con bajos).';
+            } else if (moranI > 0) {
+                moranInterp = 'Agrupamiento DÉBIL';
+                moranExplain = '⚠️ Ligera tendencia a agrupamiento, pero no muy marcada.';
+            } else if (moranI > -0.5) {
+                moranInterp = 'Aleatorio o dispersión débil';
+                moranExplain = '❓ No hay patrón claro o dispersión ligera.';
+            } else {
+                moranInterp = 'Dispersión FUERTE';
+                moranExplain = '❌ Patrón tablero de ajedrez: altos al lado de bajos.';
+            }
+            
+            let gearyInterp, gearyExplain;
+            if (gearyC < 0.5) {
+                gearyInterp = 'Agrupamiento MUY FUERTE';
+                gearyExplain = '✅ Diferencias entre vecinos SON MÍNIMAS. Valores muy similares lado a lado.';
+            } else if (gearyC < 1) {
+                gearyInterp = 'Agrupamiento';
+                gearyExplain = '✅ Vecinos son más similares que aleatorio.';
+            } else if (gearyC < 1.5) {
+                gearyInterp = 'Aleatorio o dispersión débil';
+                gearyExplain = '⚠️ Diferencias moderadas entre vecinos.';
+            } else {
+                gearyInterp = 'Dispersión FUERTE';
+                gearyExplain = '❌ Grandes diferencias entre vecinos. Cambios abruptos frecuentes.';
+            }
+            
+            document.getElementById('moranInterpretation').textContent = moranInterp;
+            document.getElementById('moranExplain').textContent = moranExplain;
+            document.getElementById('gearyInterpretation').textContent = gearyInterp;
+            document.getElementById('gearyExplain').textContent = gearyExplain;
+        }
+
+        // Calcular LISA
+        function calculateLISA() {
+            const n = data.length;
+            const mean = data.reduce((sum, d) => sum + d.value, 0) / n;
+            const variance = data.reduce((sum, d) => sum + Math.pow(d.value - mean, 2), 0) / n;
+            const stdDev = Math.sqrt(variance);
+            
+            let hotspots = 0, coldspots = 0, outlierHL = 0, outlierLH = 0;
+            
+            data.forEach((cell, idx) => {
+                const neighbors = getNeighbors(cell.x, cell.z);
+                
+                if (neighbors.length === 0) {
+                    cell.lisaCategory = 'none';
+                    cell.moranLocal = 0;
+                    return;
+                }
+                
+                // Calcular promedio de vecinos
+                let neighborSum = 0;
+                neighbors.forEach(n => {
+                    const nIdx = n.x * gridSize + n.z;
+                    neighborSum += data[nIdx].value;
+                });
+                const neighborMean = neighborSum / neighbors.length;
+                
+                // Estandarizar
+                const zi = (cell.value - mean) / stdDev;
+                const zLag = (neighborMean - mean) / stdDev;
+                
+                // Moran Local
+                cell.moranLocal = zi * zLag;
+                
+                // Clasificación LISA (umbral más flexible)
+                const threshold = 0.3;
+                
+                if (Math.abs(cell.moranLocal) > threshold) {
+                    if (zi > 0 && zLag > 0) {
+                        cell.lisaCategory = 'high-high';
+                        hotspots++;
+                    } else if (zi < 0 && zLag < 0) {
+                        cell.lisaCategory = 'low-low';
+                        coldspots++;
+                    } else if (zi > 0 && zLag < 0) {
+                        cell.lisaCategory = 'high-low';
+                        outlierHL++;
+                    } else if (zi < 0 && zLag > 0) {
+                        cell.lisaCategory = 'low-high';
+                        outlierLH++;
+                    }
+                } else {
+                    cell.lisaCategory = 'none';
+                }
+            });
+            
+            // Actualizar contadores
+            document.getElementById('hotspotCount').textContent = hotspots;
+            document.getElementById('coldspotCount').textContent = coldspots;
+            document.getElementById('outlierHLCount').textContent = outlierHL;
+            document.getElementById('outlierLHCount').textContent = outlierLH;
+            
+            // Explicación
+            let explanation = '';
+            if (hotspots > 0) {
+                explanation += `✅ ${hotspots} hotspots detectados: áreas de valores altos agrupados. `;
+            }
+            if (coldspots > 0) {
+                explanation += `❄️ ${coldspots} coldspots detectados: áreas de valores bajos agrupados. `;
+            }
+            if (outlierHL > 0 || outlierLH > 0) {
+                explanation += `⚠️ ${outlierHL + outlierLH} outliers: valores atípicos respecto a sus vecinos.`;
+            }
+            if (hotspots === 0 && coldspots === 0) {
+                explanation = '❓ No se detectaron clusters significativos. Patrón aleatorio o disperso.';
+            }
+            
+            document.getElementById('lisaExplain').textContent = explanation;
+        }
+
+        // Obtener vecinos (Rook)
+        function getNeighbors(x, z) {
+            const neighbors = [];
+            const offsets = [[-1,0], [1,0], [0,-1], [0,1]];
+            
+            offsets.forEach(([dx, dz]) => {
+                const nx = x + dx;
+                const nz = z + dz;
+                if (nx >= 0 && nx < gridSize && nz >= 0 && nz < gridSize) {
+                    neighbors.push({ x: nx, z: nz });
+                }
+            });
+            
+            return neighbors;
+        }
+
+        // Actualizar visualización
+        function updateVisualization() {
+            updateSceneBars(moranScene, moranBars, 'moran');
+            updateSceneBars(gearyScene, gearyBars, 'geary');
+            updateSceneBars(lisaScene, lisaBars, 'lisa');
+        }
+
+        function updateSceneBars(scene, bars, type) {
+            // Limpiar barras existentes
+            bars.forEach(bar => scene.remove(bar));
+            bars.length = 0;
+            
+            const offset = (gridSize - 1) / 2;
+            
+            data.forEach((cell, idx) => {
+                const x = cell.x - offset;
+                const z = cell.z - offset;
+                const height = cell.value / 15;
+                
+                const geometry = new THREE.BoxGeometry(0.9, height, 0.9);
+                let color;
+                
+                if (type === 'lisa') {
+                    color = getLISAColor(cell.lisaCategory);
+                } else {
+                    color = getColor(cell.value);
+                }
+                
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: color,
+                    roughness: 0.5,
+                    metalness: 0.3
+                });
+                
+                const bar = new THREE.Mesh(geometry, material);
+                bar.position.set(x, height / 2, z);
+                scene.add(bar);
+                bars.push(bar);
+            });
+        }
+
+        // Color según categoría LISA
+        function getLISAColor(category) {
+            const colors = {
+                'high-high': new THREE.Color(0xd73027),   // Rojo
+                'low-low': new THREE.Color(0x4575b4),     // Azul
+                'high-low': new THREE.Color(0xfdae61),    // Naranja
+                'low-high': new THREE.Color(0xabd9e9),    // Celeste
+                'none': new THREE.Color(0xcccccc)         // Gris
+            };
+            return colors[category] || colors['none'];
+        }
+
+        // Color según valor
+        function getColor(value) {
+            const normalized = (value - 20) / 80;
+            return new THREE.Color(
+                0.2 + normalized * 0.8,
+                0.3 + normalized * 0.3,
+                1 - normalized * 0.8
+            );
+        }
+
+        // Regenerar patrón
+        function regeneratePattern() {
+            generatePattern();
+        }
+
+        // Animación
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            moranCamera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.002);
+            moranCamera.lookAt(0, 0, 0);
+            
+            gearyCamera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.002);
+            gearyCamera.lookAt(0, 0, 0);
+            
+            lisaCamera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.002);
+            lisaCamera.lookAt(0, 0, 0);
+            
+            moranRenderer.render(moranScene, moranCamera);
+            gearyRenderer.render(gearyScene, gearyCamera);
+            lisaRenderer.render(lisaScene, lisaCamera);
+        }
+
+        // Iniciar
+        init();
+    </script>
+</body>
+</html>
